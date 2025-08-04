@@ -1,0 +1,257 @@
+<?php
+
+if($_SESSION['role_auth'] != "Admin"){
+    direction::redirect("");
+}
+$req = new request();
+$fromdate = "";
+$todate = "";
+$invoice = "";
+$total = "";
+if (!empty($req->get())) {
+    $fromdate = $req->input('date_1');
+    $todate = $req->input('date_2');
+    $select = new database();
+    $tbl_invoice1 = $select->query("SELECT sum(finaltotal) as total, count(invoice_id) as invoice FROM tbl_invoice WHERE order_date BETWEEN '" . $fromdate . "' AND '" . $todate . "'");
+    $tbl_invoice2 = $select->query("SELECT * FROM tbl_invoice_detail WHERE order_date BETWEEN '" . $fromdate . "' AND '" . $todate . "'");
+    $tbl_invoince_join = $select->query("SELECT tbl_invoice.*, tbl_invoice_detail.* 
+                                            FROM tbl_invoice INNER JOIN tbl_invoice_detail 
+                                            ON tbl_invoice.invoice_id = tbl_invoice_detail.invoice_id
+                                             WHERE tbl_invoice.order_date 
+                                             BETWEEN '" . $fromdate . "' AND '" . $todate . "'");
+
+    
+
+    foreach ($tbl_invoice1 as $invoices) {
+        $invoice = $invoices->invoice;
+        $total = number_format($invoices->total, 0);
+    }
+    //$tbl_invoice3 = $select->query("SELECT order_date, sum(total) as price FROM tbl_invoice WHERE order_date BETWEEN :fromdate AND :todate GROUP BY order_date");
+    //$tbl_invoice_details = $select->query("SELECT product_name, sum(qty) as q FROM tbl_invoice_detail WHERE order_date BETWEEN :fromdate AND :todate GROUP BY product_id");
+}
+
+?>
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <? extend("layouts/header_index"); ?>
+    <style>
+        /*.color {
+            backgroundColor: rgb(120, 102, 102);-->
+        }*/
+    </style>
+</head>
+
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <? extend("layouts/header_menu"); ?>
+        <div class="content-wrapper">
+            <section class="content">
+                <div class="card card-success">
+                    <form action="<? url('report/detail_order') ?>" method="POST" autocomplete="off">
+                    <div class="card-header with-border">
+                        <h3 class="box-title" style="font-family: 'Phetsarath OT'; color: #0a58ca">ລາຍງານການຂາຍແບບລະອຽດ</h3>
+                    </div>
+                        <div class="card-header with-border">
+                            <h3 class="card-title" style="color: red;">ເລີ່ມວັນທີ : <?= $fromdate ?>
+                            </h3>
+                            <h3 class="card-title" style="color: red;">&nbsp; &nbsp; &nbsp; ເຖິິງວັນທີ : <?= $todate ?>
+                            </h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <div class="input-group date">
+                                            <div class="input-group-addon">
+                                            </div>
+                                            <input type="date" class="form-control pull-right" id="datepicker_1" name="date_1" data-date-format="yyyy-mm-dd">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-5">
+                                    <div class="form-group">
+                                        <div class="input-group date">
+                                            <div class="input-group-addon">
+                                            </div>
+                                            <input type="date" class="form-control pull-right" id="datepicker_2" name="date_2" data-date-format="yyyy-mm-dd">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <input type="submit" name="date_filter" value="ຕົກລົງ" class="btn btn-success btn-sm">
+                                </div>
+                                <br>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-offset-2 col-md-4 col-xs-12">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-green"><i class="fa fa-shopping-cart"></i></span>
+
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">ການເຄື່ອນໄຫວທັງໝົດ</span>
+                                            <span class="info-box-number"><?= $invoice ?></span>
+                                        </div>
+                                        <!-- /.info-box-content -->
+                                    </div>
+                                    <!-- /.info-box -->
+                                </div>
+                                <!-- /.col -->
+
+
+                                <div class="col-md-offset-1 col-md-5 col-xs-12">
+                                    <div class="info-box">
+                                        <span class="info-box-icon bg-green"><i class="fa fa-money-bill"></i></span>
+
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">ລາຍຮັບທັງໝົດ</span>
+                                            <span class="info-box-number"><?= $total ?> ກີບ</span>
+                                        </div>
+                                        <!-- /.info-box-content -->
+                                    </div>
+                                    <!-- /.info-box -->
+                                </div>
+                                <!-- /.col -->
+                                <!-- /.col -->
+                            </div>
+                            <!--- Transaction Table -->
+                            <div style="overflow-x:auto;">
+                                <table class="table table-striped" id="mySalesReport">
+                                    <thead>
+                                        <tr>
+                                            <th style="width:20px;">ລຳດັບ</th>
+                                            <th style="width:50px;">ຜູ້ໃຊ້ລະບົບ</th>
+                                            <th style="width:50px;">ເລກທີໃບບິນ</th>
+                                            <th style="width:100px;">ລາຍການສິນຄ້າ</th>
+                                            <th style="width:100px;">ຈຳນວນ</th>
+                                            <th style="width:100px;">ລາຄາຕໍ່ໜ່ວຍ</th>
+                                            <th style="width:70px;">ສ່ວນຫຼຸດ %</th>
+                                            <th style="width:100px;">ຈຳນວນເງິນສ່ວນຫຼຸດ</th>
+                                            <th style="width:100px;">ລວມທັງໝົດ </th>
+                                            <th style="width:100px;">ວັນເດືອນປີ</th>
+                                            <th style="width:100px;">ປະເພດການຊຳລະ </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <? if (!empty($req->get())) { ?>
+                                            <? $no =1;
+                                                foreach ($tbl_invoince_join as $tbl_invoice) { ?>
+                                                <tr>
+                                                    <td><?= $no++ ?></td>
+                                                    <td class="text-uppercase"><?= $tbl_invoice->cashier_name; ?></td>
+                                                    <td><?= $tbl_invoice->invoice_id; ?></td>
+                                                    <td><?= $tbl_invoice->product_name; ?></td>
+                                                    <td><?= $tbl_invoice->qty; ?></td>
+                                                    <td> <?= number_format($tbl_invoice->price) ?> ກີບ</td>
+                                                    <td> <?= number_format($tbl_invoice->discount) ?> %</td>
+                                                    <td> <?= number_format($tbl_invoice->discount_amount) ?> ກີບ</td>
+                                                    <td> <?= number_format($tbl_invoice->total) ?> ກີບ</td>
+                                                    <td><?= $tbl_invoice->order_date; ?></td>
+                                                    <td> <?= $tbl_invoice->payType ?> </td>
+                                                </tr>
+                                                
+                                            <? } ?>
+                                        <? } ?>
+                                        
+                                       
+                                    </tbody>
+                                   
+                                </table>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </div>
+        <!-- ./wrapper -->
+        <footer class="main-footer">
+            <strong>ຂໍສະຫງວນລິກະສິດ.</strong>
+            <div class="float-right d-none d-sm-inline-block">
+                <b>Version</b> 1.0
+            </div>
+        </footer>
+    </div>
+</body>
+<? if (flash('error')) { ?>
+    <script>
+        alert("<?= flash('error') ?>")
+    </script>
+<? } ?>
+<? if (flash('success')) { ?>
+    <script>
+        alert("<?= flash('success') ?>")
+    </script>
+<? } ?>
+
+<? extend("layouts/footer_index"); ?>
+<script type="text/javascript">
+    /*$('#datepicker_1').datepicker({
+        autoclose: true
+    });
+    //Date picker
+    $('#datepicker_2').datepicker({
+        autoclose: true
+    });*/
+
+    $(document).ready(function() {
+        $("#mySalesReport").DataTable(
+            {
+                "oLanguage": {
+    "sEmptyTable": "ຍັງບໍ່ມີຂໍ້ມູນ",
+    "sSearch": "ຄົ້ນຫາຂໍ້ມູນ",
+    "sLengthMenu": "ສະແດງ _MENU_ ແຖວຕໍ່ຫນ້າ",
+    "sZeroRecords": "ບໍ່ພົບຂໍ້ມູນໃດໆ",
+    "sInfo": "ສະແດງ _START_ ຫາ _END_ ຈາກ _TOTAL_ ແຖວ",
+    "sInfoEmpty": "ສະແດງ 0 ຫາ 0 ຈາກ 0 ແຖວ",
+    "sInfoFiltered": "(ກັ່ນຕອງຈາກ _MAX_ ບັນທຶກທັງໝົດ)",
+    
+    "oPaginate": {
+            // "sFirst":    "ກ່ອນໜ້າ",
+            // "sLast":    "Último",
+            "sNext":    "ຕໍ່ໄປ",
+            "sPrevious": "ກ່ອນໜ້າ"
+        },
+                    },
+            "responsive": true,
+            "lengthChange": false,
+            "autoWidth": false,
+            "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
+        }).buttons().container().appendTo('#mySalesReport_wrapper .col-md-6:eq(0)');
+    });
+</script>
+<script type="text/javascript">
+    /*var ctx = document.getElementById('myChart');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode($date); ?>,
+            datasets: [{
+                label: 'Total Pendapatan',
+                data: <?php echo json_encode($total); ?>,
+                backgroundColor: 'rgb(13, 192, 58)',
+                borderColor: 'rgb(32, 204, 75)',
+                borderWidth: 1
+            }]
+        },
+        options: {}
+    });
+
+    var ctx = document.getElementById('myBestSellItem');
+    var myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: <?php echo json_encode($pname); ?>,
+            datasets: [{
+                label: 'Total Produk Terjual',
+                data: <?php echo json_encode($qty); ?>,
+                backgroundColor: 'rgb(120,112,175)',
+                borderColor: 'rgb(255,255,255)',
+                borderWidth: 1
+            }]
+        },
+        options: {}
+    });*/
+</script>
+
+</html>
